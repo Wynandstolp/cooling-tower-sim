@@ -1,0 +1,610 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_TIMESCALEDB",
+      "label": "TimescaleDB",
+      "description": "TimescaleDB (PostgreSQL) datasource — set this to your cooling_tower database",
+      "type": "datasource",
+      "pluginId": "grafana-postgresql-datasource",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "grafana-postgresql-datasource", "name": "PostgreSQL", "version": "1.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" }
+  ],
+  "title": "Cooling Tower Simulator",
+  "description": "Physics-based cooling tower simulation — NTU-effectiveness model, Queensland weather, injectable fault scenarios",
+  "uid": "cooling-tower-sim",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-7d", "to": "now" },
+  "timepicker": {},
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "tags": ["cooling-tower", "industrial", "simulation"],
+  "links": [],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+        "enable": true,
+        "hide": false,
+        "iconColor": "red",
+        "name": "Fault Events",
+        "rawQuery": true,
+        "rawSql": "SELECT MIN(time) AS time, active_faults AS text, 'fault' AS tags FROM tower_readings WHERE $__timeFilter(time) AND run_id = ${run_id} AND active_faults <> 'none' GROUP BY active_faults ORDER BY 1",
+        "target": "",
+        "type": "table"
+      }
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "DS_TIMESCALEDB",
+        "type": "datasource",
+        "pluginId": "grafana-postgresql-datasource",
+        "hide": 0,
+        "label": "TimescaleDB datasource"
+      },
+      {
+        "name": "run_id",
+        "type": "query",
+        "label": "Run",
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+        "rawSql": "SELECT run_id::text AS __value, COALESCE(label, 'run ' || run_id) || ' (' || start_date || ')' AS __text FROM runs ORDER BY run_id DESC",
+        "refresh": 2,
+        "includeAll": false,
+        "multi": false,
+        "sort": 0
+      }
+    ]
+  },
+  "panels": [
+
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Key Performance Indicators",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }
+    },
+
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Approach Temperature",
+      "description": "T_cold_out − T_wb. Target 3–8°C. Narrows under high ambient or fouling.",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "gridPos": { "x": 0, "y": 1, "w": 6, "h": 5 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 8 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT time, t_approach FROM tower_readings WHERE $__timeFilter(time) AND run_id = ${run_id} ORDER BY time DESC LIMIT 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Cold Water Outlet",
+      "description": "Cooled water temperature returning to process.",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "gridPos": { "x": 6, "y": 1, "w": 6, "h": 5 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 22 },
+              { "color": "yellow", "value": 28 },
+              { "color": "red", "value": 32 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT time, t_cold_out FROM tower_readings WHERE $__timeFilter(time) AND run_id = ${run_id} ORDER BY time DESC LIMIT 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 4,
+      "type": "gauge",
+      "title": "Fouling Factor",
+      "description": "Packing condition. 1.0 = clean, 0.0 = fully fouled.",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "gridPos": { "x": 12, "y": 1, "w": 6, "h": 5 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "minVizHeight": 75,
+        "minVizWidth": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2,
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red",    "value": null },
+              { "color": "yellow", "value": 0.6 },
+              { "color": "green",  "value": 0.8 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT time, fouling_factor FROM tower_readings WHERE $__timeFilter(time) AND run_id = ${run_id} ORDER BY time DESC LIMIT 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Cycles of Concentration",
+      "description": "Basin conductivity ÷ makeup conductivity. Blowdown triggers at CoC ≥ 4.",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "gridPos": { "x": 18, "y": 1, "w": 6, "h": 5 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green",  "value": null },
+              { "color": "yellow", "value": 3.5 },
+              { "color": "red",    "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT time, coc FROM tower_readings WHERE $__timeFilter(time) AND run_id = ${run_id} ORDER BY time DESC LIMIT 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 6,
+      "type": "row",
+      "title": "Temperature",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 6, "w": 24, "h": 1 }
+    },
+
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Water Temperatures",
+      "description": "Hot inlet, cold outlet, and ambient wet bulb. The gap between T_cold_out and T_wb is the approach.",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "gridPos": { "x": 0, "y": 7, "w": 12, "h": 8 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": { "lineWidth": 1.5, "fillOpacity": 5 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "T_wb" },
+            "properties": [{ "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } },
+                           { "id": "color", "value": { "mode": "fixed", "fixedColor": "light-blue" } }] },
+          { "matcher": { "id": "byName", "options": "T_hot_in" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }] },
+          { "matcher": { "id": "byName", "options": "T_cold_out" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }] }
+        ]
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), AVG(t_hot_in) AS \"T_hot_in\", AVG(t_cold_out) AS \"T_cold_out\", AVG(t_wb) AS \"T_wb\" FROM tower_readings WHERE $__timeFilter(time) AND run_id = ${run_id} GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Approach & Range",
+      "description": "Approach = T_cold − T_wb (cooling efficiency margin). Range = T_hot − T_cold (heat duty indicator).",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "gridPos": { "x": 12, "y": 7, "w": 12, "h": 8 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": { "lineWidth": 1.5, "fillOpacity": 10 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "T_approach" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } },
+              { "id": "thresholds", "value": { "mode": "absolute",
+                "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 5 }, { "color": "red", "value": 8 }] } },
+              { "id": "custom.thresholdsStyle", "value": { "mode": "line" } }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), AVG(t_approach) AS \"T_approach\", AVG(t_range) AS \"T_range\" FROM tower_readings WHERE $__timeFilter(time) AND run_id = ${run_id} GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 9,
+      "type": "row",
+      "title": "Heat Transfer Performance",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 15, "w": 24, "h": 1 }
+    },
+
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "NTU & Effectiveness",
+      "description": "NTU = tower characteristic (higher = more transfer capacity). Effectiveness = fraction of maximum possible heat transfer achieved.",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "custom": { "lineWidth": 1.5 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "NTU" },
+            "properties": [{ "id": "unit", "value": "none" },
+                           { "id": "color", "value": { "mode": "fixed", "fixedColor": "purple" } }] },
+          { "matcher": { "id": "byName", "options": "Effectiveness" },
+            "properties": [{ "id": "unit", "value": "percentunit" },
+                           { "id": "custom.axisPlacement", "value": "right" },
+                           { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }] }
+        ]
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), AVG(ntu) AS \"NTU\", AVG(effectiveness) AS \"Effectiveness\" FROM tower_readings WHERE $__timeFilter(time) AND run_id = ${run_id} GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Fouling Factor Trend",
+      "description": "Packing condition over time. Gradual decline indicates scale/biofilm buildup. Step recovery = cleaning event.",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": { "lineWidth": 2, "fillOpacity": 20 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red",    "value": null },
+              { "color": "yellow", "value": 0.6 },
+              { "color": "green",  "value": 0.8 }
+            ]
+          },
+          "custom_thresholdsStyle": { "mode": "area" }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), AVG(fouling_factor) AS \"Fouling Factor\" FROM tower_readings WHERE $__timeFilter(time) AND run_id = ${run_id} GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 12,
+      "type": "row",
+      "title": "Water Quality & Chemistry",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 1 }
+    },
+
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Conductivity & Cycles of Concentration",
+      "description": "Rising basin conductivity indicates dissolved solids concentrating. CoC triggers blowdown at target (4×).",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "gridPos": { "x": 0, "y": 25, "w": 12, "h": 8 },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "custom": { "lineWidth": 1.5 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Cond Basin" },
+            "properties": [{ "id": "unit", "value": "µS/cm" },
+                           { "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }] },
+          { "matcher": { "id": "byName", "options": "CoC" },
+            "properties": [{ "id": "unit", "value": "none" },
+                           { "id": "custom.axisPlacement", "value": "right" },
+                           { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } },
+                           { "id": "thresholds", "value": { "mode": "absolute",
+                             "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 4 }] } },
+                           { "id": "custom.thresholdsStyle", "value": { "mode": "line" } }] }
+        ]
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), AVG(cond_basin) AS \"Cond Basin\", AVG(coc) AS \"CoC\" FROM tower_readings WHERE $__timeFilter(time) AND run_id = ${run_id} GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Water Flows",
+      "description": "Evaporation is the unavoidable loss. Blowdown spikes when CoC exceeds target. Makeup = evaporation + blowdown + drift.",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "gridPos": { "x": 12, "y": 25, "w": 12, "h": 8 },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "m³/hr",
+          "custom": { "lineWidth": 1.5, "fillOpacity": 10 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Blowdown" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }] },
+          { "matcher": { "id": "byName", "options": "Evaporation" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }] },
+          { "matcher": { "id": "byName", "options": "Makeup" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }] }
+        ]
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), AVG(evaporation_m3hr) AS \"Evaporation\", AVG(blowdown_m3hr) AS \"Blowdown\", AVG(makeup_m3hr) AS \"Makeup\" FROM tower_readings WHERE $__timeFilter(time) AND run_id = ${run_id} GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 15,
+      "type": "row",
+      "title": "Operating Conditions & Inputs",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 33, "w": 24, "h": 1 }
+    },
+
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Fan Speed & Water Flow",
+      "description": "Fan speed directly drives NTU via air mass flow (affinity law exponent 0.8). Flow reduction increases range but reduces evaporative capacity.",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "gridPos": { "x": 0, "y": 34, "w": 12, "h": 8 },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "custom": { "lineWidth": 1.5 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Fan Speed" },
+            "properties": [{ "id": "unit", "value": "percent" },
+                           { "id": "color", "value": { "mode": "fixed", "fixedColor": "purple" } },
+                           { "id": "min", "value": 0 }, { "id": "max", "value": 100 }] },
+          { "matcher": { "id": "byName", "options": "Water Flow" },
+            "properties": [{ "id": "unit", "value": "m³/hr" },
+                           { "id": "custom.axisPlacement", "value": "right" },
+                           { "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }] }
+        ]
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), AVG(fan_speed_pct) AS \"Fan Speed\", AVG(water_flow_m3hr) AS \"Water Flow\" FROM tower_readings WHERE $__timeFilter(time) AND run_id = ${run_id} GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "Ambient Conditions",
+      "description": "Real historical weather data (Open-Meteo ERA5, Rockhampton). Wet bulb is the thermodynamic limit for cooling tower outlet temperature.",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "gridPos": { "x": 12, "y": 34, "w": 12, "h": 8 },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": { "lineWidth": 1.5, "fillOpacity": 5 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "T_wb" },
+            "properties": [{ "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } },
+                           { "id": "color", "value": { "mode": "fixed", "fixedColor": "light-blue" } }] },
+          { "matcher": { "id": "byName", "options": "T_amb" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }] }
+        ]
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), AVG(t_amb) AS \"T_amb\", AVG(t_wb) AS \"T_wb\" FROM tower_readings WHERE $__timeFilter(time) AND run_id = ${run_id} GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 18,
+      "type": "row",
+      "title": "Run Summary",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 42, "w": 24, "h": 1 }
+    },
+
+    {
+      "id": 19,
+      "type": "table",
+      "title": "Fault Events",
+      "description": "Windows where at least one fault was active, with average outlet temperature during the fault.",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "gridPos": { "x": 0, "y": 43, "w": 12, "h": 8 },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "fault_start", "desc": false }]
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "t_cold_out_avg_during" },
+            "properties": [{ "id": "unit", "value": "celsius" }, { "id": "decimals", "value": 1 }] },
+          { "matcher": { "id": "byName", "options": "t_approach_avg_during" },
+            "properties": [{ "id": "unit", "value": "celsius" }, { "id": "decimals", "value": 1 }] }
+        ]
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT active_faults, fault_start, fault_end, duration, t_cold_out_avg_during, t_approach_avg_during FROM fault_events WHERE run_id = ${run_id} ORDER BY fault_start",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 20,
+      "type": "table",
+      "title": "Available Runs",
+      "description": "All simulation runs stored in the database.",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "gridPos": { "x": 12, "y": 43, "w": 12, "h": 8 },
+      "options": { "showHeader": true },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "created_at" },
+            "properties": [{ "id": "unit", "value": "dateTimeAsLocal" }] }
+        ]
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT run_id, COALESCE(label, '—') AS label, location, start_date, end_date, dt_seconds, created_at, COUNT(tr.time) AS rows FROM runs LEFT JOIN tower_readings tr USING (run_id) GROUP BY run_id ORDER BY run_id DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    }
+
+  ]
+}
