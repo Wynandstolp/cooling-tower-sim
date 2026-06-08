@@ -10,7 +10,7 @@ build/
 .env
 
 # Simulation data cache
-data/bom_weather/
+data/weather_cache/
 .cache/
 
 # Editor

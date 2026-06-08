@@ -151,7 +151,7 @@ cooling-tower-sim/
 ├── tests/
 │   └── test_cooling_tower.py   # Unit tests for physics equations
 └── data/
-    └── bom_weather/            # Raw BOM weather data
+    └── weather_cache/          # Cached Open-Meteo weather data (Parquet)
 ```
 
 ---

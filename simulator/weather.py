@@ -5,7 +5,7 @@ Fetches hourly dry bulb and wet bulb temperatures from the Open-Meteo
 historical weather API (https://open-meteo.com), which provides ERA5
 reanalysis data at ~9 km resolution for any Australian location.
 
-Downloaded data is cached as Parquet files in data/bom_weather/ to avoid
+Downloaded data is cached as Parquet files in data/weather_cache/ to avoid
 repeated API calls.
 
 Typical usage::
@@ -19,7 +19,6 @@ Typical usage::
 
 from __future__ import annotations
 
-import math
 from pathlib import Path
 from typing import Any
 
@@ -59,7 +58,7 @@ QUEENSLAND_LOCATIONS: dict[str, dict[str, Any]] = {
 }
 
 _DEFAULT_LOCATION = QUEENSLAND_LOCATIONS["rockhampton"]
-_CACHE_DIR = Path("data/bom_weather")
+_CACHE_DIR = Path("data/weather_cache")
 _API_URL = "https://archive-api.open-meteo.com/v1/archive"
 
 
@@ -106,59 +105,6 @@ def fetch_weather(
     cache_dir.mkdir(parents=True, exist_ok=True)
     df.to_parquet(cache_path, index=False)
     return df
-
-
-# ---------------------------------------------------------------------------
-# Wet bulb calculation (Stull 2011)
-# ---------------------------------------------------------------------------
-
-def wet_bulb_stull(t_dry_c: float, rh_pct: float) -> float:
-    """
-    Empirical wet bulb approximation (Stull 2011).
-
-    Accurate to ±0.65°C for RH 5–99% and T −20 to 50°C.
-
-    Reference:
-        Stull, R. (2011). Wet-bulb temperature from relative humidity and
-        air temperature. Journal of Applied Meteorology and Climatology,
-        50(11), 2267–2269.
-
-    Args:
-        t_dry_c: Dry bulb temperature [°C]
-        rh_pct:  Relative humidity [%]
-
-    Returns:
-        Wet bulb temperature [°C]
-    """
-    T = t_dry_c
-    rh = rh_pct
-    return (
-        T * math.atan(0.151977 * (rh + 8.313659) ** 0.5)
-        + math.atan(T + rh)
-        - math.atan(rh - 1.676331)
-        + 0.00391838 * rh ** 1.5 * math.atan(0.023101 * rh)
-        - 4.686035
-    )
-
-
-def rh_from_dew_point(t_dry_c: float, t_dew_c: float) -> float:
-    """
-    Relative humidity from dry bulb and dew point temperatures.
-
-    Uses the Magnus formula for saturation vapour pressure.
-
-    Args:
-        t_dry_c: Dry bulb temperature [°C]
-        t_dew_c: Dew point temperature [°C]
-
-    Returns:
-        Relative humidity [%]
-    """
-    def _sat_vp(t: float) -> float:
-        return 6.112 * math.exp(17.67 * t / (t + 243.5))
-
-    return 100.0 * _sat_vp(t_dew_c) / _sat_vp(t_dry_c)
-
 
 # ---------------------------------------------------------------------------
 # Internal helpers
