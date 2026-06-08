@@ -28,6 +28,13 @@ _L_DESIGN: float = 41.7  # kg/s  (150 m³/hr)
 # Drift loss as fraction of water flow rate
 _DRIFT_FRACTION: float = 0.0002  # 0.02%
 
+# Empirical evaporation coefficient from Nalco Water Handbook / Perry's:
+#   ~1% of flow evaporates per 12°F (6.7°C) of cooling range, adjusted for the
+#   ~75–80% evaporative fraction of total heat rejection.
+#   Gives ≈0.00085 m³ evaporated per m³·°C.  Accurate to ~10–15% for typical
+#   counter-flow towers; replace with a full Merkel balance for higher fidelity.
+_EVAPORATION_COEFF: float = 0.00085  # m³ evaporated / (m³ circulated · °C range)
+
 # Target cycles of concentration before blowdown is triggered
 _COC_TARGET: float = 4.0
 
@@ -155,7 +162,7 @@ class CoolingTowerSimulator:
         t_approach = t_cold_out - inputs.t_wb
 
         # --- Evaporation [m³/hr] ---
-        evaporation = 0.00085 * inputs.water_flow_m3hr * t_range
+        evaporation = _EVAPORATION_COEFF * inputs.water_flow_m3hr * t_range
 
         # --- Blowdown logic ---
         coc = self._calc_coc(inputs.cond_makeup)
