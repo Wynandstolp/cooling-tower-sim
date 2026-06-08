@@ -38,6 +38,7 @@ import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 
 from simulator.cooling_tower import SimulatorInputs, SimulatorOutputs
+from simulator.weather import DEFAULT_LOCATION
 
 log = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ class MQTTPublisher:
         host: str = _DEFAULT_HOST,
         port: int = _DEFAULT_PORT,
         topic_prefix: str = _DEFAULT_PREFIX,
-        location: str = "rockhampton",
+        location: str = DEFAULT_LOCATION,
         qos: int = 1,
         client_id: str = "cooling-tower-sim",
     ) -> None:
@@ -270,7 +271,7 @@ if __name__ == "__main__":
                         choices=["baseline", "fouling", "fan_fault", "high_cond", "combined"])
     parser.add_argument("--start",    default="2023-01-01")
     parser.add_argument("--end",      default="2023-01-07")
-    parser.add_argument("--location", default="rockhampton",
+    parser.add_argument("--location", default=DEFAULT_LOCATION,
                         choices=list(QUEENSLAND_LOCATIONS.keys()))
     parser.add_argument("--dt",       type=float, default=60.0)
     parser.add_argument("--speed",    type=float, default=60.0,

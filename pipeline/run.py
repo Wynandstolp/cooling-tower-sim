@@ -28,7 +28,7 @@ import pandas as pd
 from simulator.cooling_tower import CoolingTowerSimulator, SimulatorInputs
 from simulator.faults import FaultInjector, FanFault, FoulingFault, HighConductivityFault
 from simulator.runner import RunConfig, _generate_process_inputs, _interpolate_weather
-from simulator.weather import QUEENSLAND_LOCATIONS, fetch_weather
+from simulator.weather import DEFAULT_LOCATION, QUEENSLAND_LOCATIONS, fetch_weather
 
 log = logging.getLogger(__name__)
 
@@ -239,7 +239,7 @@ if __name__ == "__main__":
                         help="Fault scenario to inject (default: baseline)")
     parser.add_argument("--start",    default="2025-01-01", help="Simulation start date")
     parser.add_argument("--end",      default="2025-01-07", help="Simulation end date")
-    parser.add_argument("--location", default="rockhampton",
+    parser.add_argument("--location", default=DEFAULT_LOCATION,
                         choices=list(QUEENSLAND_LOCATIONS.keys()))
     parser.add_argument("--dt",       type=float, default=60.0, help="Timestep in seconds")
     parser.add_argument("--speed",    type=float, default=60.0,

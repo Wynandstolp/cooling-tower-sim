@@ -57,7 +57,7 @@ QUEENSLAND_LOCATIONS: dict[str, dict[str, Any]] = {
     },
 }
 
-_DEFAULT_LOCATION = QUEENSLAND_LOCATIONS["rockhampton"]
+DEFAULT_LOCATION = "rockhampton"
 _CACHE_DIR = Path("data/weather_cache")
 _API_URL = "https://archive-api.open-meteo.com/v1/archive"
 
@@ -69,9 +69,9 @@ _API_URL = "https://archive-api.open-meteo.com/v1/archive"
 def fetch_weather(
     start_date: str,
     end_date: str,
-    latitude: float = _DEFAULT_LOCATION["latitude"],
-    longitude: float = _DEFAULT_LOCATION["longitude"],
-    label: str = _DEFAULT_LOCATION["label"],
+    latitude: float = QUEENSLAND_LOCATIONS[DEFAULT_LOCATION]["latitude"],
+    longitude: float = QUEENSLAND_LOCATIONS[DEFAULT_LOCATION]["longitude"],
+    label: str = QUEENSLAND_LOCATIONS[DEFAULT_LOCATION]["label"],
     cache_dir: Path = _CACHE_DIR,
 ) -> pd.DataFrame:
     """

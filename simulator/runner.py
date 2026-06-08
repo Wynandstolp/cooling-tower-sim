@@ -30,7 +30,7 @@ import pandas as pd
 
 from simulator.cooling_tower import CoolingTowerSimulator, SimulatorInputs
 from simulator.faults import FaultInjector
-from simulator.weather import QUEENSLAND_LOCATIONS, fetch_weather
+from simulator.weather import DEFAULT_LOCATION, QUEENSLAND_LOCATIONS, fetch_weather
 
 
 # ---------------------------------------------------------------------------
@@ -44,7 +44,7 @@ class RunConfig:
     start_date: str                  # ISO date, e.g. "2023-01-01"
     end_date: str                    # ISO date, inclusive, e.g. "2023-01-07"
     dt: float = 60.0                 # Timestep [s]
-    location: str = "rockhampton"    # Key into QUEENSLAND_LOCATIONS
+    location: str = DEFAULT_LOCATION  # Key into QUEENSLAND_LOCATIONS
 
     # Nominal process setpoints
     t_hot_in_nominal: float = 40.0       # °C
