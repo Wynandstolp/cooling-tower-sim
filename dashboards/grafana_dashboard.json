@@ -41,7 +41,7 @@
         "type": "dashboard"
       },
       {
-        "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
         "enable": true,
         "hide": false,
         "iconColor": "red",
@@ -66,7 +66,7 @@
         "name": "run_id",
         "type": "query",
         "label": "Run",
-        "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
         "rawSql": "SELECT run_id::text AS __value, COALESCE(label, 'run ' || run_id) || ' (' || start_date || ')' AS __text FROM runs ORDER BY run_id DESC",
         "refresh": 2,
         "includeAll": false,
@@ -90,7 +90,7 @@
       "type": "stat",
       "title": "Approach Temperature",
       "description": "T_cold_out − T_wb. Target 3–8°C. Narrows under high ambient or fouling.",
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
       "gridPos": { "x": 0, "y": 1, "w": 6, "h": 5 },
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
@@ -129,7 +129,7 @@
       "type": "stat",
       "title": "Cold Water Outlet",
       "description": "Cooled water temperature returning to process.",
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
       "gridPos": { "x": 6, "y": 1, "w": 6, "h": 5 },
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
@@ -166,7 +166,7 @@
       "type": "gauge",
       "title": "Fouling Factor",
       "description": "Packing condition. 1.0 = clean, 0.0 = fully fouled.",
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
       "gridPos": { "x": 12, "y": 1, "w": 6, "h": 5 },
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
@@ -206,7 +206,7 @@
       "type": "stat",
       "title": "Cycles of Concentration",
       "description": "Basin conductivity ÷ makeup conductivity. Blowdown triggers at CoC ≥ 4.",
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
       "gridPos": { "x": 18, "y": 1, "w": 6, "h": 5 },
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
@@ -250,7 +250,7 @@
       "type": "timeseries",
       "title": "Water Temperatures",
       "description": "Hot inlet, cold outlet, and ambient wet bulb. The gap between T_cold_out and T_wb is the approach.",
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
       "gridPos": { "x": 0, "y": 7, "w": 12, "h": 8 },
       "options": {
         "tooltip": { "mode": "multi", "sort": "desc" },
@@ -285,7 +285,7 @@
       "type": "timeseries",
       "title": "Approach & Range",
       "description": "Approach = T_cold − T_wb (cooling efficiency margin). Range = T_hot − T_cold (heat duty indicator).",
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
       "gridPos": { "x": 12, "y": 7, "w": 12, "h": 8 },
       "options": {
         "tooltip": { "mode": "multi", "sort": "none" },
@@ -329,7 +329,7 @@
       "type": "timeseries",
       "title": "NTU & Effectiveness",
       "description": "NTU = tower characteristic (higher = more transfer capacity). Effectiveness = fraction of maximum possible heat transfer achieved.",
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
       "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
       "options": {
         "tooltip": { "mode": "multi" },
@@ -361,7 +361,7 @@
       "type": "timeseries",
       "title": "Fouling Factor Trend",
       "description": "Packing condition over time. Gradual decline indicates scale/biofilm buildup. Step recovery = cleaning event.",
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
       "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
       "options": {
         "tooltip": { "mode": "single" },
@@ -407,7 +407,7 @@
       "type": "timeseries",
       "title": "Conductivity & Cycles of Concentration",
       "description": "Rising basin conductivity indicates dissolved solids concentrating. CoC triggers blowdown at target (4×).",
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
       "gridPos": { "x": 0, "y": 25, "w": 12, "h": 8 },
       "options": {
         "tooltip": { "mode": "multi" },
@@ -442,7 +442,7 @@
       "type": "timeseries",
       "title": "Water Flows",
       "description": "Evaporation is the unavoidable loss. Blowdown spikes when CoC exceeds target. Makeup = evaporation + blowdown + drift.",
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
       "gridPos": { "x": 12, "y": 25, "w": 12, "h": 8 },
       "options": {
         "tooltip": { "mode": "multi" },
@@ -484,7 +484,7 @@
       "type": "timeseries",
       "title": "Fan Speed & Water Flow",
       "description": "Fan speed directly drives NTU via air mass flow (affinity law exponent 0.8). Flow reduction increases range but reduces evaporative capacity.",
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
       "gridPos": { "x": 0, "y": 34, "w": 12, "h": 8 },
       "options": {
         "tooltip": { "mode": "multi" },
@@ -517,7 +517,7 @@
       "type": "timeseries",
       "title": "Ambient Conditions",
       "description": "Real historical weather data (Open-Meteo ERA5, Rockhampton). Wet bulb is the thermodynamic limit for cooling tower outlet temperature.",
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
       "gridPos": { "x": 12, "y": 34, "w": 12, "h": 8 },
       "options": {
         "tooltip": { "mode": "multi" },
@@ -558,7 +558,7 @@
       "type": "table",
       "title": "Fault Events",
       "description": "Windows where at least one fault was active, with average outlet temperature during the fault.",
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
       "gridPos": { "x": 0, "y": 43, "w": 12, "h": 8 },
       "options": {
         "showHeader": true,
@@ -587,7 +587,7 @@
       "type": "table",
       "title": "Available Runs",
       "description": "All simulation runs stored in the database.",
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_TIMESCALEDB}" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "timescaledb" },
       "gridPos": { "x": 12, "y": 43, "w": 12, "h": 8 },
       "options": { "showHeader": true },
       "fieldConfig": {
